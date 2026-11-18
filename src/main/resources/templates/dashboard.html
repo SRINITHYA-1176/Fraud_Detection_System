@@ -1,0 +1,1280 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Fraud Detection | Payment Monitoring</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+          rel="stylesheet">
+
+    <!-- NEW: Bootstrap Icons for dashboard navigation and KPI cards -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+          rel="stylesheet">
+
+    <!-- Chart.js library -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- NEW: Markdown parser for Gemini responses -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+    <!-- NEW: Sanitize generated HTML before displaying it -->
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.6/dist/purify.min.js"></script>
+
+    <style>
+        /* ========================================= */
+        /* CHANGED: Overall dashboard styling        */
+        /* ========================================= */
+
+        body {
+            background-color: #f4f6fa;
+            font-family: Arial, sans-serif;
+            color: #263247;
+            margin: 0;
+        }
+
+        /* ========================================= */
+        /* NEW: Sidebar navigation                   */
+        /* ========================================= */
+
+        .sidebar {
+            width: 250px;
+            min-height: 100vh;
+            background: #142b4a;
+            color: white;
+            position: fixed;
+            top: 0;
+            left: 0;
+            padding: 25px 18px;
+            z-index: 1000;
+        }
+
+        .brand {
+            font-size: 21px;
+            font-weight: bold;
+            margin-bottom: 40px;
+        }
+
+        .brand i {
+            color: #55a5ff;
+            margin-right: 8px;
+        }
+
+        .sidebar-label {
+            font-size: 11px;
+            color: #9eafc5;
+            text-transform: uppercase;
+            margin: 25px 10px 10px;
+            letter-spacing: 1px;
+        }
+
+        .sidebar a {
+            display: block;
+            color: #d5dfec;
+            text-decoration: none;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 6px;
+            font-size: 14px;
+        }
+
+        .sidebar a:hover,
+        .sidebar a.active {
+            background: #24466e;
+            color: white;
+        }
+
+        .sidebar a i {
+            margin-right: 10px;
+        }
+
+        /* ========================================= */
+        /* NEW: Main dashboard content               */
+        /* ========================================= */
+
+        .main-content {
+            margin-left: 250px;
+            padding: 30px;
+        }
+
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 28px;
+            gap: 15px;
+        }
+
+        .dashboard-title {
+            font-weight: 700;
+            color: #142b4a;
+            margin-bottom: 5px;
+        }
+
+        .header-subtitle {
+            color: #7b8798;
+            font-size: 14px;
+            margin: 0;
+        }
+
+        .header-label {
+            background: white;
+            padding: 10px 15px;
+            border-radius: 9px;
+            border: 1px solid #e5eaf1;
+            color: #53647b;
+            font-size: 13px;
+        }
+
+        /* ========================================= */
+        /* CHANGED: KPI cards                        */
+        /* ========================================= */
+
+        .stat-card {
+            background: white;
+            border: 1px solid #e9edf3;
+            border-radius: 12px;
+            padding: 22px;
+            height: 100%;
+            box-shadow: 0 3px 12px rgba(20, 43, 74, 0.04);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-3px);
+            transition: 0.2s ease;
+            box-shadow: 0 6px 18px rgba(20, 43, 74, 0.08);
+        }
+
+        .stat-label {
+            color: #778397;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .stat-number {
+            font-size: 30px;
+            font-weight: 700;
+            margin-top: 12px;
+            color: #142b4a;
+        }
+
+        .stat-icon {
+            width: 42px;
+            height: 42px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 10px;
+            font-size: 20px;
+        }
+
+        .icon-blue {
+            background: #e9f2ff;
+            color: #2673d9;
+        }
+
+        .icon-green {
+            background: #e5f6ed;
+            color: #198754;
+        }
+
+        .icon-orange {
+            background: #fff3df;
+            color: #d98b13;
+        }
+
+        .icon-red {
+            background: #fde9e9;
+            color: #dc3545;
+        }
+
+        /* ========================================= */
+        /* CHANGED: Content cards                    */
+        /* ========================================= */
+
+        .content-card {
+            background: white;
+            border: 1px solid #e9edf3;
+            border-radius: 12px;
+            padding: 23px;
+            box-shadow: 0 3px 12px rgba(20, 43, 74, 0.04);
+        }
+
+        .section-title {
+            color: #142b4a;
+            font-size: 17px;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .section-subtitle {
+            color: #8a96a7;
+            font-size: 13px;
+        }
+
+        /* ========================================= */
+        /* NEW: Chart styling                        */
+        /* ========================================= */
+
+        .chart-container {
+            max-width: 380px;
+            height: 300px;
+            margin: auto;
+        }
+
+        /* ========================================= */
+        /* NEW: Transaction table styling            */
+        /* ========================================= */
+
+        .table {
+            margin-bottom: 0;
+            font-size: 13px;
+        }
+
+        .table thead th {
+            background: #f7f9fc;
+            color: #66758a;
+            font-weight: 600;
+            padding: 15px 12px;
+            white-space: nowrap;
+            border-bottom: 1px solid #e7ebf1;
+        }
+
+        .table tbody td {
+            padding: 15px 12px;
+            vertical-align: middle;
+            color: #435168;
+        }
+
+        .table tbody tr:hover {
+            background-color: #f8fbff;
+        }
+
+        .transaction-id {
+            font-weight: 600;
+            color: #2368b5;
+        }
+
+        .status-badge {
+            padding: 6px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            display: inline-block;
+        }
+
+        .status-approved {
+            color: #16834d;
+            background: #e5f6ed;
+        }
+
+        .status-review {
+            color: #b77912;
+            background: #fff3d9;
+        }
+
+        .status-blocked {
+            color: #c4313d;
+            background: #fde9e9;
+        }
+
+        .reason-text {
+            max-width: 220px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        /* ========================================= */
+        /* NEW: Search and filter controls            */
+        /* ========================================= */
+
+        .filter-control {
+            border: 1px solid #e0e6ee;
+            border-radius: 8px;
+            padding: 9px 12px;
+            font-size: 13px;
+        }
+
+        .filter-control:focus {
+            border-color: #3986db;
+            box-shadow: 0 0 0 3px rgba(57, 134, 219, 0.1);
+            outline: none;
+        }
+
+        /* ========================================= */
+        /* NEW: AI explanation formatting             */
+        /* ========================================= */
+
+        .ai-explanation-text {
+            line-height: 1.8;
+            color: #344054;
+            font-size: 14px;
+            overflow-wrap: anywhere;
+        }
+
+        .ai-explanation-text h1,
+        .ai-explanation-text h2,
+        .ai-explanation-text h3,
+        .ai-explanation-text h4 {
+            color: #142b4a;
+            font-size: 16px;
+            font-weight: 700;
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+
+        .ai-explanation-text p {
+            margin-bottom: 12px;
+        }
+
+        .ai-explanation-text ul,
+        .ai-explanation-text ol {
+            padding-left: 22px;
+            margin-bottom: 15px;
+        }
+
+        .ai-explanation-text li {
+            margin-bottom: 7px;
+        }
+
+        .ai-explanation-text strong {
+            color: #142b4a;
+        }
+
+        .ai-explanation-text code {
+            background: #f1f4f8;
+            padding: 2px 5px;
+            border-radius: 4px;
+        }
+
+        .ai-info {
+            background: #edf5ff;
+            border: 1px solid #d8e9ff;
+            border-radius: 9px;
+            padding: 12px;
+            color: #315d91;
+            font-size: 13px;
+        }
+
+        /* ========================================= */
+        /* NEW: Modal styling                         */
+        /* ========================================= */
+
+        .modal-content {
+            border: none;
+            border-radius: 13px;
+            overflow: hidden;
+        }
+
+        .modal-header {
+            background: #f7f9fc;
+            border-bottom: 1px solid #e9edf3;
+            padding: 20px 24px;
+        }
+
+        .modal-body {
+            padding: 24px;
+        }
+
+        /* ========================================= */
+        /* NEW: Mobile responsive layout              */
+        /* ========================================= */
+
+        @media (max-width: 768px) {
+
+            .sidebar {
+                position: relative;
+                width: 100%;
+                min-height: auto;
+                padding: 15px;
+            }
+
+            .brand {
+                margin-bottom: 15px;
+            }
+
+            .sidebar-label {
+                display: none;
+            }
+
+            .sidebar a {
+                display: inline-block;
+                padding: 8px;
+                margin-right: 5px;
+            }
+
+            .main-content {
+                margin-left: 0;
+                padding: 18px;
+            }
+
+            .dashboard-header {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+            .content-card {
+                padding: 15px;
+            }
+        }
+    </style>
+
+</head>
+
+<body>
+
+<!-- ========================================= -->
+<!-- NEW: Sidebar navigation                   -->
+<!-- ========================================= -->
+
+<aside class="sidebar">
+
+    <div class="brand">
+        <i class="bi bi-shield-check"></i>
+        FraudGuard
+    </div>
+
+    <div class="sidebar-label">Main Menu</div>
+
+    <a href="#overview" class="active">
+        <i class="bi bi-grid"></i>
+        Overview
+    </a>
+
+    <a href="#analytics">
+        <i class="bi bi-bar-chart"></i>
+        Fraud Analytics
+    </a>
+
+    <a href="#transactions">
+        <i class="bi bi-arrow-left-right"></i>
+        Transactions
+    </a>
+
+    <div class="sidebar-label">System</div>
+
+    <a href="#transactions">
+        <i class="bi bi-shield-lock"></i>
+        Fraud Monitoring
+    </a>
+
+</aside>
+
+
+<!-- ========================================= -->
+<!-- CHANGED: Main dashboard container         -->
+<!-- ========================================= -->
+
+<main class="main-content">
+
+    <!-- Dashboard heading -->
+    <header class="dashboard-header">
+
+        <div>
+            <h2 class="dashboard-title">Payment Fraud Monitoring</h2>
+
+            <p class="header-subtitle">
+                Monitor and analyze payment transactions in real time
+            </p>
+        </div>
+
+        <div class="header-label">
+            <i class="bi bi-activity text-success me-2"></i>
+            Fraud Monitoring Dashboard
+        </div>
+
+    </header>
+
+
+    <!-- ========================================= -->
+    <!-- CHANGED: Transaction summary KPI cards    -->
+    <!-- ========================================= -->
+
+    <section id="overview" class="row g-4 mb-4">
+
+        <!-- Total transactions -->
+        <div class="col-md-6 col-xl-3">
+
+            <div class="stat-card">
+
+                <div class="d-flex justify-content-between align-items-center">
+
+                    <span class="stat-label">Total Transactions</span>
+
+                    <div class="stat-icon icon-blue">
+                        <i class="bi bi-arrow-left-right"></i>
+                    </div>
+
+                </div>
+
+                <div class="stat-number"
+                     th:text="${stats.totalTransactions}">
+                    0
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- Approved transactions -->
+        <div class="col-md-6 col-xl-3">
+
+            <div class="stat-card">
+
+                <div class="d-flex justify-content-between align-items-center">
+
+                    <span class="stat-label">Approved</span>
+
+                    <div class="stat-icon icon-green">
+                        <i class="bi bi-check-circle"></i>
+                    </div>
+
+                </div>
+
+                <div class="stat-number text-success"
+                     th:text="${stats.approvedTransactions}">
+                    0
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- Review transactions -->
+        <div class="col-md-6 col-xl-3">
+
+            <div class="stat-card">
+
+                <div class="d-flex justify-content-between align-items-center">
+
+                    <span class="stat-label">Under Review</span>
+
+                    <div class="stat-icon icon-orange">
+                        <i class="bi bi-exclamation-triangle"></i>
+                    </div>
+
+                </div>
+
+                <div class="stat-number text-warning"
+                     th:text="${stats.reviewTransactions}">
+                    0
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- Blocked transactions -->
+        <div class="col-md-6 col-xl-3">
+
+            <div class="stat-card">
+
+                <div class="d-flex justify-content-between align-items-center">
+
+                    <span class="stat-label">Blocked</span>
+
+                    <div class="stat-icon icon-red">
+                        <i class="bi bi-shield-x"></i>
+                    </div>
+
+                </div>
+
+                <div class="stat-number text-danger"
+                     th:text="${stats.blockedTransactions}">
+                    0
+                </div>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- ========================================= -->
+    <!-- CHANGED: Fraud distribution chart         -->
+    <!-- ========================================= -->
+
+    <section id="analytics" class="content-card mb-4">
+
+        <div class="mb-3">
+
+            <h5 class="section-title">Fraud Detection Overview</h5>
+
+            <p class="section-subtitle">
+                Distribution of transactions based on fraud classification
+            </p>
+
+        </div>
+
+        <div class="chart-container">
+
+            <canvas id="fraudChart"></canvas>
+
+        </div>
+
+    </section>
+
+
+    <!-- ========================================= -->
+    <!-- CHANGED: Transaction monitoring table     -->
+    <!-- ========================================= -->
+
+    <section id="transactions" class="content-card">
+
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+
+            <div>
+
+                <h5 class="section-title">Transaction Monitoring</h5>
+
+                <p class="section-subtitle mb-0">
+                    Recent payment transactions stored in PostgreSQL
+                </p>
+
+            </div>
+
+            <!-- NEW: Search and status filters -->
+            <div class="d-flex flex-wrap gap-2">
+
+                <input
+                        type="text"
+                        id="transactionSearch"
+                        class="form-control filter-control"
+                        placeholder="Search transaction or customer..."
+                        style="min-width: 220px;">
+
+                <select id="statusFilter"
+                        class="form-select filter-control"
+                        style="width: 150px;">
+
+                    <option value="ALL">All Statuses</option>
+                    <option value="APPROVED">Approved</option>
+                    <option value="REVIEW">Review</option>
+                    <option value="BLOCKED">Blocked</option>
+
+                </select>
+
+            </div>
+
+        </div>
+
+
+        <div class="table-responsive">
+
+            <table class="table table-hover align-middle">
+
+                <thead>
+
+                <tr>
+                    <th>Transaction ID</th>
+                    <th>Customer ID</th>
+                    <th>Amount</th>
+                    <th>Location</th>
+                    <th>Status</th>
+                    <th>Reason</th>
+                    <th>Actions</th>
+                </tr>
+
+                </thead>
+
+                <tbody id="transactionTableBody">
+
+                <!-- Display transactions fetched from PostgreSQL -->
+                <tr th:each="transaction : ${recentTransactions}"
+                    th:attr="data-status=${transaction.status}">
+
+                    <td class="transaction-id"
+                        th:text="${transaction.transactionId}">
+                        TXN-101
+                    </td>
+
+                    <td th:text="${transaction.customerId}">
+                        CUST-101
+                    </td>
+
+                    <td th:text="${#numbers.formatDecimal(transaction.amount, 1, 'COMMA', 2, 'POINT')}">
+                        5,000.00
+                    </td>
+
+                    <td th:text="${transaction.location}">
+                        Bangalore
+                    </td>
+
+                    <!-- CHANGED: Use professional status badges -->
+                    <td>
+
+                        <span th:if="${transaction.status == 'APPROVED'}"
+                              class="status-badge status-approved">
+                            <i class="bi bi-check-circle me-1"></i>
+                            APPROVED
+                        </span>
+
+                        <span th:if="${transaction.status == 'REVIEW'}"
+                              class="status-badge status-review">
+                            <i class="bi bi-exclamation-circle me-1"></i>
+                            REVIEW
+                        </span>
+
+                        <span th:if="${transaction.status == 'BLOCKED'}"
+                              class="status-badge status-blocked">
+                            <i class="bi bi-x-circle me-1"></i>
+                            BLOCKED
+                        </span>
+
+                    </td>
+
+                    <td class="reason-text"
+                        th:text="${transaction.reason}"
+                        th:title="${transaction.reason}">
+                        Transaction passed all fraud checks
+                    </td>
+
+                    <!-- NEW: Transaction details and AI actions -->
+                    <td>
+
+                        <div class="d-flex gap-2">
+
+                            <button
+                                    type="button"
+                                    class="btn btn-sm btn-outline-primary"
+                                    th:attr="
+                                        data-transaction-id=${transaction.transactionId},
+                                        data-customer-id=${transaction.customerId},
+                                        data-amount=${transaction.amount},
+                                        data-location=${transaction.location},
+                                        data-status=${transaction.status},
+                                        data-reason=${transaction.reason},
+                                        data-time=${transaction.transactionTime}"
+                                    onclick="showTransactionDetails(this)"
+                                    title="View transaction details">
+
+                                <i class="bi bi-eye"></i>
+
+                            </button>
+
+                            <button
+                                    type="button"
+                                    class="btn btn-sm btn-primary"
+                                    th:attr="data-transaction-id=${transaction.transactionId}"
+                                    onclick="generateAIExplanation(this)">
+
+                                <i class="bi bi-stars me-1"></i>
+                                AI Explain
+
+                            </button>
+
+                        </div>
+
+                    </td>
+
+                </tr>
+
+
+                <!-- Show message if no transactions are available -->
+                <tr th:if="${#lists.isEmpty(recentTransactions)}">
+
+                    <td colspan="7" class="text-center text-muted py-4">
+                        <i class="bi bi-inbox fs-3 d-block mb-2"></i>
+                        No transactions found
+                    </td>
+
+                </tr>
+
+                </tbody>
+
+            </table>
+
+            <!-- NEW: Display message when filters return no matches -->
+            <div id="noFilterResults"
+                 class="text-center text-muted py-4 d-none">
+
+                No transactions match your search.
+
+            </div>
+
+        </div>
+
+    </section>
+
+</main>
+
+
+<!-- ========================================= -->
+<!-- NEW: Transaction details modal             -->
+<!-- ========================================= -->
+
+<div class="modal fade" id="transactionDetailsModal"
+     tabindex="-1" aria-hidden="true">
+
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+
+        <div class="modal-content">
+
+            <div class="modal-header">
+
+                <div>
+
+                    <h5 class="modal-title fw-bold">
+                        Transaction Details
+                    </h5>
+
+                    <small class="text-muted" id="detailTransactionId"></small>
+
+                </div>
+
+                <button type="button" class="btn-close"
+                        data-bs-dismiss="modal"></button>
+
+            </div>
+
+            <div class="modal-body">
+
+                <div class="row g-3">
+
+                    <div class="col-md-6">
+                        <label class="text-muted small">Customer ID</label>
+                        <div class="fw-semibold" id="detailCustomerId"></div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="text-muted small">Amount</label>
+                        <div class="fw-semibold" id="detailAmount"></div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="text-muted small">Location</label>
+                        <div class="fw-semibold" id="detailLocation"></div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="text-muted small">Status</label>
+                        <div class="fw-semibold" id="detailStatus"></div>
+                    </div>
+
+                    <div class="col-md-12">
+                        <label class="text-muted small">Fraud Detection Reason</label>
+                        <div class="fw-semibold" id="detailReason"></div>
+                    </div>
+
+                    <div class="col-md-12">
+                        <label class="text-muted small">Transaction Time</label>
+                        <div class="fw-semibold" id="detailTime"></div>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="modal-footer">
+
+                <button type="button" class="btn btn-secondary"
+                        data-bs-dismiss="modal">
+                    Close
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ========================================= -->
+<!-- CHANGED: Gemini AI explanation modal      -->
+<!-- ========================================= -->
+
+<div class="modal fade" id="aiExplanationModal" tabindex="-1"
+     aria-labelledby="aiExplanationModalLabel" aria-hidden="true">
+
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+
+        <div class="modal-content">
+
+            <div class="modal-header">
+
+                <div>
+
+                    <h5 class="modal-title fw-bold" id="aiExplanationModalLabel">
+
+                        <i class="bi bi-stars text-primary me-2"></i>
+                        AI Fraud Investigation
+
+                    </h5>
+
+                    <small class="text-muted" id="aiTransactionId"></small>
+
+                </div>
+
+                <button type="button" class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+
+            </div>
+
+            <div class="modal-body">
+
+                <!-- NEW: AI information note -->
+                <div class="ai-info mb-3">
+
+                    <i class="bi bi-info-circle me-2"></i>
+
+                    AI provides supporting explanations only.
+                    The existing Kafka fraud-detection rules determine
+                    the transaction status.
+
+                </div>
+
+                <!-- Loading indicator -->
+                <div id="aiLoading" class="text-center py-5 d-none">
+
+                    <div class="spinner-border text-primary" role="status">
+
+                        <span class="visually-hidden">Loading...</span>
+
+                    </div>
+
+                    <p class="mt-3 text-muted">
+                        Gemini is analyzing the transaction...
+                    </p>
+
+                </div>
+
+                <!-- CHANGED: Render formatted Markdown here -->
+                <div id="aiExplanationContent"
+                     class="ai-explanation-text"></div>
+
+                <!-- Error message -->
+                <div id="aiError"
+                     class="alert alert-danger d-none"
+                     role="alert"></div>
+
+            </div>
+
+            <div class="modal-footer">
+
+                <button type="button" class="btn btn-secondary"
+                        data-bs-dismiss="modal">
+                    Close
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ========================================= -->
+<!-- Bootstrap JavaScript bundle              -->
+<!-- ========================================= -->
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+
+<!-- ========================================= -->
+<!-- CHANGED: Chart.js configuration           -->
+<!-- ========================================= -->
+
+<script th:inline="javascript">
+
+    // Read live transaction counts from Spring Boot.
+    const approvedCount = [[${stats.approvedTransactions}]];
+    const reviewCount = [[${stats.reviewTransactions}]];
+    const blockedCount = [[${stats.blockedTransactions}]];
+
+    // Get the chart canvas element.
+    const ctx = document.getElementById('fraudChart');
+
+    // Create the transaction distribution chart.
+    new Chart(ctx, {
+
+        type: 'doughnut',
+
+        data: {
+
+            labels: ['Approved', 'Under Review', 'Blocked'],
+
+            datasets: [{
+
+                label: 'Transactions',
+
+                data: [
+                    approvedCount,
+                    reviewCount,
+                    blockedCount
+                ],
+
+                backgroundColor: [
+                    '#198754',
+                    '#ffc107',
+                    '#dc3545'
+                ],
+
+                borderWidth: 3,
+                borderColor: '#ffffff',
+                hoverOffset: 8
+
+            }]
+
+        },
+
+        options: {
+
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '68%',
+
+            plugins: {
+
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        padding: 20,
+                        usePointStyle: true
+                    }
+                },
+
+                title: {
+                    display: true,
+                    text: 'Transaction Distribution',
+                    padding: 15
+                }
+
+            }
+
+        }
+
+    });
+
+</script>
+
+
+<!-- ========================================= -->
+<!-- NEW: Transaction search and status filter -->
+<!-- ========================================= -->
+
+<script>
+
+    // Get the search and filter controls.
+    const searchInput = document.getElementById('transactionSearch');
+    const statusFilter = document.getElementById('statusFilter');
+    const transactionRows = document.querySelectorAll(
+        '#transactionTableBody tr[data-status]'
+    );
+
+    // Filter transactions using the entered text and selected status.
+    function filterTransactions() {
+
+        const searchValue = searchInput.value.toLowerCase().trim();
+        const selectedStatus = statusFilter.value;
+
+        let visibleCount = 0;
+
+        transactionRows.forEach(row => {
+
+            const rowText = row.textContent.toLowerCase();
+            const rowStatus = row.getAttribute('data-status');
+
+            const matchesSearch = rowText.includes(searchValue);
+
+            const matchesStatus =
+                selectedStatus === 'ALL' ||
+                rowStatus === selectedStatus;
+
+            const shouldDisplay = matchesSearch && matchesStatus;
+
+            row.style.display = shouldDisplay ? '' : 'none';
+
+            if (shouldDisplay) {
+                visibleCount++;
+            }
+
+        });
+
+        // Show a message if no rows match the selected filters.
+        document.getElementById('noFilterResults')
+            .classList.toggle('d-none', visibleCount !== 0);
+
+    }
+
+    // Run filtering whenever the user types or changes status.
+    searchInput.addEventListener('input', filterTransactions);
+    statusFilter.addEventListener('change', filterTransactions);
+
+
+    // =========================================
+    // NEW: Transaction details modal
+    // =========================================
+
+    const detailsModal = new bootstrap.Modal(
+        document.getElementById('transactionDetailsModal')
+    );
+
+    // Display transaction information in the details modal.
+    function showTransactionDetails(button) {
+
+        // Read transaction information from the clicked row's button.
+        const data = button.dataset;
+
+        // Use textContent to safely display database values.
+        document.getElementById('detailTransactionId').textContent =
+            'Transaction ID: ' + data.transactionId;
+
+        document.getElementById('detailCustomerId').textContent =
+            data.customerId || '-';
+
+        document.getElementById('detailAmount').textContent =
+            data.amount ? Number(data.amount).toLocaleString('en-IN', {
+                style: 'currency',
+                currency: 'INR'
+            }) : '-';
+
+        document.getElementById('detailLocation').textContent =
+            data.location || '-';
+
+        document.getElementById('detailStatus').textContent =
+            data.status || '-';
+
+        document.getElementById('detailReason').textContent =
+            data.reason || '-';
+
+        document.getElementById('detailTime').textContent =
+            data.time || '-';
+
+        detailsModal.show();
+
+    }
+
+</script>
+
+
+<!-- ========================================= -->
+<!-- CHANGED: Gemini AI integration             -->
+<!-- ========================================= -->
+
+<script>
+
+    // Get the Bootstrap AI modal instance.
+    const aiModalElement = document.getElementById('aiExplanationModal');
+    const aiModal = new bootstrap.Modal(aiModalElement);
+
+    // Generate an AI explanation for the selected transaction.
+    async function generateAIExplanation(button) {
+
+        // Get the transaction ID from the clicked button.
+        const transactionId = button.getAttribute('data-transaction-id');
+
+        // Get the modal elements.
+        const loadingElement = document.getElementById('aiLoading');
+        const explanationElement = document.getElementById('aiExplanationContent');
+        const errorElement = document.getElementById('aiError');
+        const transactionIdElement = document.getElementById('aiTransactionId');
+
+        // Reset the modal before displaying new results.
+        explanationElement.replaceChildren();
+        errorElement.textContent = '';
+        errorElement.classList.add('d-none');
+
+        // Display the selected transaction ID.
+        transactionIdElement.textContent =
+            'Transaction ID: ' + transactionId;
+
+        // Show loading indicator.
+        loadingElement.classList.remove('d-none');
+
+        // Open the modal while Gemini processes the request.
+        aiModal.show();
+
+        // Prevent repeated clicks while the request is running.
+        button.disabled = true;
+
+        const originalButtonText = button.innerHTML;
+
+        button.innerHTML =
+            '<span class="spinner-border spinner-border-sm me-1"></span> Generating';
+
+        try {
+
+            // Call the existing Spring Boot REST API.
+            const response = await fetch(
+                `/api/transactions/${encodeURIComponent(transactionId)}/ai-explanation`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                }
+            );
+
+            // Read the backend response.
+            const responseData = await response.json();
+
+            // Handle unsuccessful API responses.
+            if (!response.ok) {
+
+                throw new Error(
+                    responseData.message ||
+                    responseData.error ||
+                    'Unable to generate AI explanation.'
+                );
+
+            }
+
+            // Validate the AI response before formatting it.
+            if (!responseData.explanation ||
+                responseData.explanation.trim() === '') {
+
+                throw new Error('Gemini returned an empty explanation.');
+
+            }
+
+            // NEW: Convert Gemini Markdown into HTML.
+            const formattedExplanation = marked.parse(
+                responseData.explanation
+            );
+
+            // NEW: Sanitize generated HTML before displaying it.
+            const safeExplanation = DOMPurify.sanitize(
+                formattedExplanation
+            );
+
+            // CHANGED: Display formatted explanation instead of plain text.
+            explanationElement.innerHTML = safeExplanation;
+
+        } catch (error) {
+
+            // Display API or Gemini errors in the modal.
+            errorElement.textContent =
+                error.message || 'An unexpected error occurred.';
+
+            errorElement.classList.remove('d-none');
+
+            console.error('AI explanation error:', error);
+
+        } finally {
+
+            // Hide loading indicator.
+            loadingElement.classList.add('d-none');
+
+            // Restore the button.
+            button.disabled = false;
+            button.innerHTML = originalButtonText;
+
+        }
+
+    }
+
+</script>
+
+</body>
+</html>
+```
